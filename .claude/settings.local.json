@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(docker compose:*)",
+      "Bash(curl:*)",
+      "Bash(xargs:*)",
+      "Bash(docker volume:*)",
+      "Bash(tail:*)"
+    ]
+  }
+}
