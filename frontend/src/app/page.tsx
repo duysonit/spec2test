@@ -94,12 +94,6 @@ export default function LoginPage() {
               {loading ? 'Signing in...' : 'Sign in'}
             </button>
           </div>
-
-          <div className="mt-4 text-center">
-            <p className="text-sm text-gray-600">
-              Demo Login: <span className="font-medium">admin@spec2test.com</span> / admin123
-            </p>
-          </div>
         </form>
       </div>
     </div>
