@@ -1,18 +1,37 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/AuthContext';
 import { projectsApi } from '@/lib/api';
 import type { Project } from '@/types';
 import { ProjectType } from '@/types';
 import { format } from 'date-fns';
-import { RequirementTextFileImport } from '@/components/RequirementTextFileImport';
+import { AppShell, LoadingScreen, EmptyState } from '@/components/ui';
+import { MagicCard } from '@/components/magicui/magic-card';
+import { BlurFade } from '@/components/magicui/blur-fade';
+import {
+  Plus,
+  Trash,
+  ClipboardText,
+  PlugsConnected,
+  FolderOpen,
+  SquaresFour,
+  GearSix,
+  MagnifyingGlass,
+  GridFour,
+  ListBullets,
+  ArrowRight,
+} from '@phosphor-icons/react';
+
+type ViewMode = 'grid' | 'list';
 
 export default function DashboardPage() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [query, setQuery] = useState('');
+  const [view, setView] = useState<ViewMode>('grid');
+  const [typeFilter, setTypeFilter] = useState<'all' | ProjectType>('all');
   const { user, logout } = useAuth();
   const router = useRouter();
 
@@ -39,7 +58,6 @@ export default function DashboardPage() {
     if (!confirm(`Are you sure you want to delete "${projectName}"? This action cannot be undone.`)) {
       return;
     }
-
     try {
       await projectsApi.delete(projectId);
       await fetchProjects();
@@ -53,139 +71,228 @@ export default function DashboardPage() {
     router.push('/');
   };
 
-  const standardProjects = projects.filter(p => p.project_type === ProjectType.STANDARD);
-  const apiTestingProjects = projects.filter(p => p.project_type === ProjectType.API_TESTING);
+  const filtered = useMemo(() => {
+    return projects.filter((p) => {
+      const matchesType = typeFilter === 'all' || p.project_type === typeFilter;
+      const matchesQuery =
+        !query.trim() ||
+        p.name.toLowerCase().includes(query.toLowerCase()) ||
+        (p.description || '').toLowerCase().includes(query.toLowerCase());
+      return matchesType && matchesQuery;
+    });
+  }, [projects, query, typeFilter]);
 
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-lg">Loading...</div>
-      </div>
-    );
+    return <LoadingScreen />;
   }
 
-  return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
-          <h1 className="text-2xl font-bold text-gray-900">Spec2Test</h1>
-          <div className="flex items-center gap-4">
-            {user?.is_admin && (
-              <button
-                onClick={() => router.push('/admin')}
-                className="text-sm text-blue-600 hover:text-blue-800"
-              >
-                Admin Panel
-              </button>
-            )}
-            <span className="text-sm text-gray-600">{user?.email}</span>
-            <button
-              onClick={handleLogout}
-              className="text-sm text-red-600 hover:text-red-800"
-            >
-              Logout
-            </button>
-          </div>
-        </div>
-      </header>
+  const nav = [
+    {
+      label: 'Projects',
+      icon: <SquaresFour size={18} weight="fill" />,
+      active: true,
+      onClick: () => router.push('/dashboard'),
+    },
+    ...(user?.is_admin
+      ? [
+          {
+            label: 'Admin',
+            icon: <GearSix size={18} />,
+            onClick: () => router.push('/admin'),
+          },
+        ]
+      : []),
+  ];
 
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="flex justify-between items-center mb-8">
-          <h2 className="text-3xl font-bold text-gray-900">Projects</h2>
+  const topbar = (
+    <div className="flex w-full items-center justify-between gap-4">
+      <span className="text-sm font-medium text-slate-300">All Projects</span>
+      <div className="flex items-center gap-2">
+        {/* Search */}
+        <div className="relative">
+          <MagnifyingGlass
+            size={16}
+            className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-500"
+          />
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search projects..."
+            className="h-9 w-56 rounded border-2 border-slate-600 bg-[rgb(var(--surface-2))] pl-9 pr-3 text-sm text-white placeholder:text-slate-500 transition-colors focus:border-accent-500 focus:outline-none"
+          />
+        </div>
+
+        {/* View toggle */}
+        <div className="flex items-center rounded border border-slate-700 bg-[rgb(var(--surface-2))] p-0.5">
           <button
-            onClick={() => setShowCreateModal(true)}
-            className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition font-semibold shadow-md"
+            onClick={() => setView('grid')}
+            aria-label="Grid view"
+            className={`rounded p-1.5 transition-colors ${
+              view === 'grid' ? 'bg-slate-700 text-slate-100' : 'text-slate-500 hover:text-slate-300'
+            }`}
           >
-            + New Project
+            <GridFour size={16} weight={view === 'grid' ? 'fill' : 'regular'} />
+          </button>
+          <button
+            onClick={() => setView('list')}
+            aria-label="List view"
+            className={`rounded p-1.5 transition-colors ${
+              view === 'list' ? 'bg-slate-700 text-slate-100' : 'text-slate-500 hover:text-slate-300'
+            }`}
+          >
+            <ListBullets size={16} weight={view === 'list' ? 'bold' : 'regular'} />
           </button>
         </div>
 
+        <button onClick={() => router.push('/projects/new')} className="btn-primary h-9 px-3">
+          <Plus size={16} weight="bold" />
+          Add New
+        </button>
+      </div>
+    </div>
+  );
+
+  return (
+    <AppShell
+      user={user}
+      nav={nav}
+      onLogout={handleLogout}
+      onHome={() => router.push('/dashboard')}
+      topbar={topbar}
+    >
+      <div className="mx-auto max-w-6xl">
+        {/* Mobile search + add */}
+        <div className="mb-6 flex items-center gap-2 lg:hidden">
+          <div className="relative flex-1">
+            <MagnifyingGlass size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search projects..."
+              className="h-9 w-full rounded border-2 border-slate-600 bg-[rgb(var(--surface-2))] pl-9 pr-3 text-sm text-white placeholder:text-slate-500 focus:border-accent-500 focus:outline-none"
+            />
+          </div>
+          <button onClick={() => router.push('/projects/new')} className="btn-primary h-9 px-3">
+            <Plus size={16} weight="bold" />
+            New
+          </button>
+        </div>
+
+        {/* Filter chips */}
+        <div className="mb-6 flex flex-wrap items-center gap-2">
+          <FilterChip label="All" count={projects.length} active={typeFilter === 'all'} onClick={() => setTypeFilter('all')} />
+          <FilterChip
+            label="Standard QC"
+            count={projects.filter((p) => p.project_type === ProjectType.STANDARD).length}
+            active={typeFilter === ProjectType.STANDARD}
+            onClick={() => setTypeFilter(ProjectType.STANDARD)}
+          />
+          <FilterChip
+            label="API Testing"
+            count={projects.filter((p) => p.project_type === ProjectType.API_TESTING).length}
+            active={typeFilter === ProjectType.API_TESTING}
+            onClick={() => setTypeFilter(ProjectType.API_TESTING)}
+          />
+        </div>
+
         {projects.length === 0 ? (
-          <div className="bg-white rounded-lg shadow p-12 text-center">
-            <div className="inline-block p-6 bg-gray-100 rounded-full mb-4">
-              <span className="text-6xl">📁</span>
-            </div>
-            <h3 className="text-xl font-semibold text-gray-700 mb-2">No Projects Yet</h3>
-            <p className="text-gray-500 mb-6">Create your first project to get started!</p>
-            <button
-              onClick={() => setShowCreateModal(true)}
-              className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition font-semibold"
-            >
-              Create Project
-            </button>
+          <EmptyState
+            icon={<FolderOpen size={28} className="text-slate-500" />}
+            title="No projects yet"
+            description="Create your first project to start generating test strategies and cases."
+            action={
+              <button onClick={() => router.push('/projects/new')} className="btn-primary">
+                <Plus size={18} weight="bold" />
+                Create project
+              </button>
+            }
+          />
+        ) : filtered.length === 0 ? (
+          <EmptyState
+            icon={<MagnifyingGlass size={26} className="text-slate-500" />}
+            title="No matches"
+            description="No projects match your search or filter. Try a different keyword."
+          />
+        ) : view === 'grid' ? (
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {filtered.map((project, i) => (
+              <BlurFade key={project.id} delay={i * 0.05} inViewMargin="0px">
+                <ProjectCard
+                  project={project}
+                  onDelete={handleDeleteProject}
+                  onNavigate={() => router.push(`/projects/${project.id}`)}
+                />
+              </BlurFade>
+            ))}
           </div>
         ) : (
-          <div className="space-y-8">
-            {/* Standard QC Projects */}
-            <div>
-              <div className="flex items-center gap-3 mb-4">
-                <span className="text-3xl">📋</span>
-                <h3 className="text-2xl font-bold text-gray-900">Standard QC Projects</h3>
-                <span className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-sm font-semibold">
-                  {standardProjects.length}
-                </span>
-              </div>
-              {standardProjects.length === 0 ? (
-                <div className="bg-gray-50 border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
-                  <p className="text-gray-500">No standard QC projects yet</p>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {standardProjects.map((project) => (
-                    <ProjectCard
-                      key={project.id}
-                      project={project}
-                      onDelete={handleDeleteProject}
-                      onNavigate={() => router.push(`/projects/${project.id}`)}
-                    />
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* API Testing Projects */}
-            <div>
-              <div className="flex items-center gap-3 mb-4">
-                <span className="text-3xl">🔌</span>
-                <h3 className="text-2xl font-bold text-gray-900">API Testing Projects</h3>
-                <span className="bg-purple-100 text-purple-700 px-3 py-1 rounded-full text-sm font-semibold">
-                  {apiTestingProjects.length}
-                </span>
-              </div>
-              {apiTestingProjects.length === 0 ? (
-                <div className="bg-gray-50 border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
-                  <p className="text-gray-500">No API testing projects yet</p>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {apiTestingProjects.map((project) => (
-                    <ProjectCard
-                      key={project.id}
-                      project={project}
-                      onDelete={handleDeleteProject}
-                      onNavigate={() => router.push(`/projects/${project.id}`)}
-                    />
-                  ))}
-                </div>
-              )}
-            </div>
+          <div className="overflow-hidden rounded-card border border-slate-800 bg-[rgb(var(--surface))]">
+            {filtered.map((project, i) => (
+              <ProjectRow
+                key={project.id}
+                project={project}
+                last={i === filtered.length - 1}
+                onDelete={handleDeleteProject}
+                onNavigate={() => router.push(`/projects/${project.id}`)}
+              />
+            ))}
           </div>
         )}
-      </main>
+      </div>
+    </AppShell>
+  );
+}
 
-      {/* Create Project Modal */}
-      {showCreateModal && (
-        <CreateProjectModal
-          onClose={() => setShowCreateModal(false)}
-          onSuccess={() => {
-            setShowCreateModal(false);
-            fetchProjects();
-          }}
-        />
-      )}
-    </div>
+function FilterChip({
+  label,
+  count,
+  active,
+  onClick,
+}: {
+  label: string;
+  count: number;
+  active: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
+        active
+          ? 'border-accent-500 bg-accent-500/10 text-accent-300'
+          : 'border-slate-700 text-slate-400 hover:border-slate-600 hover:text-slate-200'
+      }`}
+    >
+      {label}
+      <span className={`rounded-full px-1.5 py-0.5 text-[10px] ${active ? 'bg-accent-500/20 text-accent-200' : 'bg-slate-800 text-slate-400'}`}>
+        {count}
+      </span>
+    </button>
+  );
+}
+
+function TypeMeta({ project }: { project: Project }) {
+  const isApi = project.project_type === ProjectType.API_TESTING;
+  return (
+    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-accent-500/15 text-accent-300 ring-1 ring-inset ring-accent-500/20">
+      {isApi ? <PlugsConnected size={20} weight="fill" /> : <ClipboardText size={20} weight="fill" />}
+    </span>
+  );
+}
+
+function StatusPill({ status }: { status: string }) {
+  return (
+    <span
+      className={`pill capitalize ${
+        status === 'active'
+          ? 'bg-emerald-500/15 text-emerald-300'
+          : status === 'completed'
+          ? 'bg-accent-500/15 text-accent-300'
+          : 'bg-slate-800 text-slate-400'
+      }`}
+    >
+      {status}
+    </span>
   );
 }
 
@@ -198,243 +305,102 @@ function ProjectCard({
   onDelete: (id: number, name: string) => void;
   onNavigate: () => void;
 }) {
+  const isApi = project.project_type === ProjectType.API_TESTING;
+
   const handleDeleteClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     onDelete(project.id, project.name);
   };
 
   return (
-    <div
+    <MagicCard
       onClick={onNavigate}
-      className="bg-white rounded-lg shadow hover:shadow-xl transition cursor-pointer p-6 border-2 border-transparent hover:border-blue-300 relative group"
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => e.key === 'Enter' && onNavigate()}
+      className="flex h-full cursor-pointer flex-col rounded-card border border-slate-800 bg-[rgb(var(--surface))] p-5 shadow-card transition hover:border-accent-500/60 hover:shadow-card-hover focus:outline-none focus:ring-2 focus:ring-accent-400 focus:ring-offset-2 focus:ring-offset-[rgb(var(--background))]"
     >
-      {/* Delete Button */}
       <button
         onClick={handleDeleteClick}
-        className="absolute top-3 right-3 text-gray-400 hover:text-red-600 opacity-0 group-hover:opacity-100 transition"
+        className="absolute right-3 top-3 z-20 rounded-lg p-1.5 text-slate-500 opacity-0 transition hover:bg-rose-500/15 hover:text-rose-300 focus:opacity-100 group-hover:opacity-100"
         title="Delete project"
       >
-        <svg
-          className="w-5 h-5"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-          />
-        </svg>
+        <Trash size={16} />
       </button>
 
-      {/* Project Type Badge */}
-      <div className="mb-3">
-        <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold ${
-          project.project_type === ProjectType.API_TESTING
-            ? 'bg-purple-100 text-purple-700'
-            : 'bg-blue-100 text-blue-700'
-        }`}>
-          <span>{project.project_type === ProjectType.API_TESTING ? '🔌' : '📋'}</span>
-          {project.project_type === ProjectType.API_TESTING ? 'API Testing' : 'Standard QC'}
+      <div className="flex items-center gap-3">
+        <TypeMeta project={project} />
+        <span className="text-xs font-medium uppercase tracking-wide text-slate-500">
+          {isApi ? 'API Testing' : 'Standard QC'}
         </span>
       </div>
 
-      <h3 className="text-xl font-semibold text-gray-900 mb-2 pr-8">
-        {project.name}
-      </h3>
-      {project.description && (
-        <p className="text-gray-600 text-sm mb-4 line-clamp-2">{project.description}</p>
+      <h3 className="mt-4 pr-6 text-base font-semibold text-slate-100">{project.name}</h3>
+      {project.description ? (
+        <p className="mt-1.5 line-clamp-2 text-sm leading-relaxed text-slate-400">{project.description}</p>
+      ) : (
+        <p className="mt-1.5 text-sm italic text-slate-600">No description</p>
       )}
-      <div className="flex items-center justify-between text-xs text-gray-500 mt-4 pt-4 border-t">
-        <span className={`px-2 py-1 rounded capitalize ${
-          project.status === 'active' ? 'bg-green-100 text-green-700' :
-          project.status === 'completed' ? 'bg-blue-100 text-blue-700' :
-          'bg-gray-100 text-gray-700'
-        }`}>
-          {project.status}
-        </span>
-        <span>{format(new Date(project.created_at), 'MMM d, yyyy')}</span>
+
+      <div className="mt-auto flex items-center justify-between border-t border-slate-800 pt-4 text-xs">
+        <StatusPill status={project.status} />
+        <span className="text-slate-500">{format(new Date(project.created_at), 'MMM d, yyyy')}</span>
       </div>
-    </div>
+
+      <span className="pointer-events-none absolute bottom-5 right-5 flex items-center gap-1 text-xs font-medium text-accent-300 opacity-0 transition-all duration-200 group-hover:opacity-100">
+        Open <ArrowRight size={13} weight="bold" />
+      </span>
+    </MagicCard>
   );
 }
 
-function CreateProjectModal({
-  onClose,
-  onSuccess,
+function ProjectRow({
+  project,
+  last,
+  onDelete,
+  onNavigate,
 }: {
-  onClose: () => void;
-  onSuccess: () => void;
+  project: Project;
+  last: boolean;
+  onDelete: (id: number, name: string) => void;
+  onNavigate: () => void;
 }) {
-  const [projectType, setProjectType] = useState<ProjectType>(ProjectType.STANDARD);
-  const [name, setName] = useState('');
-  const [description, setDescription] = useState('');
-  const [requirementText, setRequirementText] = useState('');
-  const [context, setContext] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-
-  const mergeImportedRequirement = (text: string) => {
-    setRequirementText((prev) =>
-      prev.trim() ? `${prev}\n\n--- Imported from file ---\n\n${text}` : text
-    );
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-    setLoading(true);
-
-    try {
-      await projectsApi.create({
-        name,
-        description: description || undefined,
-        project_type: projectType,
-        requirement_text: requirementText || undefined,
-        context: context || undefined,
-      });
-      onSuccess();
-    } catch (err: any) {
-      setError(err.response?.data?.detail || 'Failed to create project');
-    } finally {
-      setLoading(false);
-    }
-  };
-
+  const isApi = project.project_type === ProjectType.API_TESTING;
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-        <h2 className="text-2xl font-bold mb-4">Create New Project</h2>
-        {error && (
-          <div className="bg-red-50 text-red-800 p-3 rounded mb-4">{error}</div>
+    <div
+      onClick={onNavigate}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => e.key === 'Enter' && onNavigate()}
+      className={`group flex cursor-pointer items-center gap-4 px-4 py-3.5 transition-colors hover:bg-slate-800/40 focus:outline-none ${
+        last ? '' : 'border-b border-slate-800'
+      }`}
+    >
+      <TypeMeta project={project} />
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-2">
+          <h3 className="truncate text-sm font-semibold text-slate-100">{project.name}</h3>
+          <span className="text-xs text-slate-600">·</span>
+          <span className="text-xs text-slate-500">{isApi ? 'API Testing' : 'Standard QC'}</span>
+        </div>
+        {project.description && (
+          <p className="mt-0.5 truncate text-xs text-slate-500">{project.description}</p>
         )}
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Project Type Selector */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Project Type *
-            </label>
-            <div className="grid grid-cols-2 gap-3">
-              <button
-                type="button"
-                onClick={() => setProjectType(ProjectType.STANDARD)}
-                className={`p-4 border-2 rounded-lg transition ${
-                  projectType === ProjectType.STANDARD
-                    ? 'border-blue-500 bg-blue-50'
-                    : 'border-gray-300 hover:border-gray-400'
-                }`}
-              >
-                <div className="text-2xl mb-2">📋</div>
-                <div className="font-semibold">Standard QC</div>
-                <div className="text-xs text-gray-600 mt-1">Regular testing workflow</div>
-              </button>
-              <button
-                type="button"
-                onClick={() => setProjectType(ProjectType.API_TESTING)}
-                className={`p-4 border-2 rounded-lg transition ${
-                  projectType === ProjectType.API_TESTING
-                    ? 'border-blue-500 bg-blue-50'
-                    : 'border-gray-300 hover:border-gray-400'
-                }`}
-              >
-                <div className="text-2xl mb-2">🔌</div>
-                <div className="font-semibold">API Testing</div>
-                <div className="text-xs text-gray-600 mt-1">API test case generation</div>
-              </button>
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Project Name *
-            </label>
-            <input
-              type="text"
-              required
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Description
-            </label>
-            <input
-              type="text"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-            />
-          </div>
-
-          {projectType === ProjectType.STANDARD && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Requirement Text *
-              </label>
-              <RequirementTextFileImport onTextImported={mergeImportedRequirement} disabled={loading} />
-              <textarea
-                required={projectType === ProjectType.STANDARD}
-                rows={6}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                value={requirementText}
-                onChange={(e) => setRequirementText(e.target.value)}
-                placeholder="Enter the requirement specification..."
-              />
-            </div>
-          )}
-
-          {projectType === ProjectType.API_TESTING && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Additional Requirements
-              </label>
-              <RequirementTextFileImport onTextImported={mergeImportedRequirement} disabled={loading} />
-              <textarea
-                rows={4}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                value={requirementText}
-                onChange={(e) => setRequirementText(e.target.value)}
-                placeholder="Additional testing requirements or business rules (optional)..."
-              />
-              <p className="text-xs text-gray-500 mt-1">
-                After creating the project, you can add API details individually.
-              </p>
-            </div>
-          )}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Context
-            </label>
-            <textarea
-              rows={3}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              value={context}
-              onChange={(e) => setContext(e.target.value)}
-              placeholder="Domain, system, user role information..."
-            />
-          </div>
-          <div className="flex justify-end gap-3 mt-6">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 text-gray-700 hover:text-gray-900"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={loading}
-              className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-400"
-            >
-              {loading ? 'Creating...' : 'Create Project'}
-            </button>
-          </div>
-        </form>
       </div>
+      <StatusPill status={project.status} />
+      <span className="hidden w-28 text-right text-xs text-slate-500 sm:block">
+        {format(new Date(project.created_at), 'MMM d, yyyy')}
+      </span>
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          onDelete(project.id, project.name);
+        }}
+        className="rounded-lg p-1.5 text-slate-600 transition hover:bg-rose-500/15 hover:text-rose-300"
+        title="Delete project"
+      >
+        <Trash size={16} />
+      </button>
     </div>
   );
 }

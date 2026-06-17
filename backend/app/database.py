@@ -3,7 +3,17 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from app.core.config import settings
 
-engine = create_engine(settings.DATABASE_URL)
+
+def _create_engine():
+    url = settings.DATABASE_URL
+    connect_args = {}
+    if "supabase" in url:
+        # Supabase requires SSL from cloud hosts (Render, Vercel, etc.)
+        connect_args["sslmode"] = "require"
+    return create_engine(url, connect_args=connect_args, pool_pre_ping=True)
+
+
+engine = _create_engine()
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 Base = declarative_base()

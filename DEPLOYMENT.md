@@ -1,52 +1,26 @@
-# Deployment Guide (Netlify + Supabase + Backend)
+# Deployment Guide
 
-This project has a separate frontend (`Next.js`) and backend (`FastAPI`), so production deploy should be split:
+Production stack hiện tại: **Vercel (frontend) + Render (backend) + Supabase (database)**.
 
-- Frontend -> Netlify
-- Backend API -> Render/Railway/Fly.io (or any Python host)
-- Database -> Supabase Postgres
+Xem bảng URL, env vars, và checklist: **[PRODUCTION_SERVICES.md](./PRODUCTION_SERVICES.md)**
 
-## 1) Supabase setup
+## Quick links
 
-1. In Supabase, create a new project.
-2. Open **Project Settings -> Database** and copy the connection string.
-3. Use the **session pooler** host/port for production stability.
-4. Convert URL to SQLAlchemy format for this backend:
+- Frontend deploy: Vercel, root `frontend/`, env `NEXT_PUBLIC_API_URL`
+- Backend deploy: Render, root `backend/`, env xem `backend/.env.example`
+- DB init: chạy `python -m app.scripts.init_db` từ local (Render Free không có Shell)
 
-`postgresql+psycopg2://...`
+## Render backend
 
-## 2) Deploy backend API
+- Set `PYTHON_VERSION=3.11.9` (Render không đọc `runtime.txt`)
+- `DATABASE_URL`: Supabase pooler, `postgresql+psycopg2://...`, encode `@` trong password
+- `CORS_ORIGINS`: domain Vercel + `http://localhost:3000`
 
-1. Deploy folder `backend` to your Python host.
-2. Add environment variables (see `backend/.env.example`):
-   - `DATABASE_URL`
-   - `SECRET_KEY`
-   - `OPENAI_API_KEY`
-   - `CORS_ORIGINS` (include your Netlify URL)
-3. Start command:
+## Vercel frontend
 
-`uvicorn app.main:app --host 0.0.0.0 --port $PORT`
+- Root Directory: `frontend`
+- `NEXT_PUBLIC_API_URL=https://<render-backend-domain>` (no trailing slash)
 
-4. After deploy, run DB init once:
+## Local development
 
-`python -m app.scripts.init_db`
-
-5. Verify backend:
-- `GET /health` returns `{"status":"healthy"}`
-- `GET /docs` loads Swagger
-
-## 3) Deploy frontend on Netlify
-
-1. Connect GitHub repo in Netlify.
-2. Use this repo root (already has `netlify.toml`):
-   - base: `frontend`
-   - build command: `npm run build`
-3. In Netlify env vars, set:
-   - `NEXT_PUBLIC_API_URL=https://<your-backend-domain>`
-4. Trigger deploy.
-
-## 4) Common production issues
-
-- `Site not available / paused`: Netlify account/site usage limit reached. Upgrade or wait for quota reset.
-- CORS error in browser: backend `CORS_ORIGINS` missing Netlify domain.
-- Login/API failing from Netlify UI: `NEXT_PUBLIC_API_URL` still points to localhost.
+See [QUICKSTART.md](./QUICKSTART.md) and `docker-compose.yml`.

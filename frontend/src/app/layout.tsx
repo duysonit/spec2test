@@ -3,10 +3,10 @@ import { Inter } from 'next/font/google';
 import './globals.css';
 import { AuthProvider } from '@/lib/AuthContext';
 
-const inter = Inter({ subsets: ['latin'] });
+const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 
 export const metadata: Metadata = {
-  title: 'Spec2Test - AI-Assisted QC Workflow Tool',
+  title: 'HSC - AI-Assisted QC Workflow Tool',
   description: 'Transform specifications into test strategies, test cases, and bug reports',
 };
 
@@ -16,8 +16,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
-      <body className={inter.className}>
+    <html lang="en" className={`dark ${inter.variable}`} style={{ colorScheme: 'dark' }}>
+      <body>
         <AuthProvider>{children}</AuthProvider>
       </body>
     </html>

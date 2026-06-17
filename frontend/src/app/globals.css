@@ -3,13 +3,83 @@
 @tailwind utilities;
 
 :root {
-  --foreground-rgb: 0, 0, 0;
-  --background-rgb: 255, 255, 255;
+  /* HSC dark theme (product default). Page is near-black, surfaces cool dark. */
+  --background: 0 0 0;          /* --bg-app #000000 */
+  --surface: 20 23 26;         /* --bg-surface #14171A */
+  --surface-2: 28 34 41;       /* --bg-surface-2 #1C2229 (raised / input) */
+  --heading: 39 44 51;         /* --bg-heading #272C33 */
+  --elevated: 42 51 61;        /* --bg-elevated #2A333D (hover) */
+  --foreground: 255 255 255;   /* --text-primary */
+  --muted: 149 161 173;        /* --text-secondary #95A1AD */
+  --border: 47 53 61;          /* --border #2F353D */
+  --border-strong: 77 84 92;   /* --border-strong #4D545C */
 }
 
 body {
-  color: rgb(var(--foreground-rgb));
-  background: rgb(var(--background-rgb));
+  color: rgb(var(--foreground));
+  background: rgb(var(--background));
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text',
+    var(--font-inter), 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  font-variant-numeric: tabular-nums lining-nums;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+@layer components {
+  /* --- HSC radii: buttons/inputs 4px, cards 8px (rounded-card) --- */
+
+  /* Primary action = HSC brand blue. Flat fill, quick ease, no scale-bounce. */
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 rounded bg-accent-500 px-4 py-2.5
+           text-sm font-semibold text-white transition-colors duration-150
+           hover:bg-accent-400
+           focus:outline-none focus:ring-2 focus:ring-accent-500 focus:ring-offset-2 focus:ring-offset-[rgb(var(--background))]
+           disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-500;
+  }
+
+  /* Secondary = neutral #33383D (HSC secondary button). */
+  .btn-secondary {
+    @apply inline-flex items-center justify-center gap-2 rounded border border-slate-600 bg-[#33383D] px-4 py-2.5
+           text-sm font-semibold text-slate-100 transition-colors duration-150
+           hover:bg-[#3A424C]
+           focus:outline-none focus:ring-2 focus:ring-accent-500 focus:ring-offset-2 focus:ring-offset-[rgb(var(--background))]
+           disabled:cursor-not-allowed disabled:opacity-60;
+  }
+
+  /* Ghost = blue text (HSC ghost button). */
+  .btn-ghost {
+    @apply inline-flex items-center justify-center gap-2 rounded px-3 py-2
+           text-sm font-medium text-slate-400 transition-colors duration-150
+           hover:bg-[rgba(51,119,255,0.12)] hover:text-slate-100
+           focus:outline-none focus:ring-2 focus:ring-accent-500 focus:ring-offset-2 focus:ring-offset-[rgb(var(--background))];
+  }
+
+  .btn-danger-ghost {
+    @apply inline-flex items-center justify-center gap-2 rounded px-3 py-2
+           text-sm font-medium text-slate-400 transition-colors duration-150
+           hover:bg-rose-500/15 hover:text-rose-400
+           focus:outline-none focus:ring-2 focus:ring-rose-500 focus:ring-offset-2 focus:ring-offset-[rgb(var(--background))];
+  }
+
+  .card {
+    @apply rounded-card border border-[rgb(var(--border))] bg-[rgb(var(--surface))] shadow-card;
+  }
+
+  .field-label {
+    @apply mb-1.5 block text-sm font-medium text-slate-300;
+  }
+
+  /* HSC inputs: 2px border #4D545C, radius 4px, focus turns brand blue. */
+  .field-input {
+    @apply block w-full rounded border-2 border-slate-600 bg-[rgb(var(--surface-2))] px-3 py-2.5 text-sm text-white
+           placeholder:text-slate-500 transition-colors duration-150
+           focus:border-accent-500 focus:outline-none;
+  }
+
+  /* HSC badges/tags: pill (radius 100px). */
+  .pill {
+    @apply inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium;
+  }
 }
 
 @layer utilities {

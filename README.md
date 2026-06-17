@@ -10,6 +10,16 @@ Spec2Test is an internal tool for QC teams that uses AI in a human-in-the-loop m
 - **Full Traceability**: Audit trail for all actions
 - **Prompt Management**: Version-controlled prompts
 
+## Production (đã deploy)
+
+| Layer | Service | URL |
+|-------|---------|-----|
+| Frontend | Vercel | https://spec2test.vercel.app |
+| Backend | Render | https://spec2test-pu49.onrender.com |
+| Database | Supabase (PostgreSQL) | Session pooler `ap-northeast-1` |
+
+Chi tiết env, deploy, troubleshooting: **[PRODUCTION_SERVICES.md](./PRODUCTION_SERVICES.md)**
+
 ## Tech Stack
 
 ### Backend
@@ -72,7 +82,7 @@ docker-compose exec backend python -m app.scripts.init_db
 - **API Docs**: http://localhost:8000/docs
 
 ### Default Login
-- Email: `admin@spec2test.com`
+- Email: `son.vd@hsc.com.vn`
 - Password: `admin123`
 
 ## Development

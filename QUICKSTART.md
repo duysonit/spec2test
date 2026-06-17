@@ -52,7 +52,7 @@ This will:
 Open your browser and go to: **http://localhost:3000**
 
 **Login with:**
-- Email: `admin@spec2test.com`
+- Email: `son.vd@hsc.com.vn`
 - Password: `admin123`
 
 ## What's Next?
@@ -144,7 +144,7 @@ npm run dev
 
 | Email | Password | Role | Admin |
 |-------|----------|------|-------|
-| admin@spec2test.com | admin123 | Admin | Yes |
+| son.vd@hsc.com.vn | admin123 | Admin | Yes |
 | qc@spec2test.com | qc123 | QC Engineer | No |
 
 ## Workflow Steps

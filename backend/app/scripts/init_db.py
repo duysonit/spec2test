@@ -23,15 +23,15 @@ def create_default_users(db: Session):
     print("Creating default users...")
 
     # Check if admin already exists
-    existing_admin = db.query(User).filter(User.email == "admin@spec2test.com").first()
+    existing_admin = db.query(User).filter(User.email == "son.vd@hsc.com.vn").first()
     if existing_admin:
         print("✓ Admin user already exists")
         return existing_admin
 
     # Create admin user
     admin = User(
-        email="admin@spec2test.com",
-        full_name="Admin User",
+        email="son.vd@hsc.com.vn",
+        full_name="Son VD",
         hashed_password=get_password_hash("admin123"),
         is_active=True,
         is_admin=True,
@@ -53,7 +53,7 @@ def create_default_users(db: Session):
     db.refresh(qc_user)
 
     print("✓ Default users created")
-    print(f"  - Admin: admin@spec2test.com / admin123")
+    print(f"  - Admin: son.vd@hsc.com.vn / admin123")
     print(f"  - QC User: qc@spec2test.com / qc123")
 
     return admin

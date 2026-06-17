@@ -6,6 +6,8 @@ import { useAuth } from '@/lib/AuthContext';
 import { promptTemplatesApi } from '@/lib/api';
 import type { PromptTemplate } from '@/types';
 import { STEP_LABELS, StepType } from '@/types';
+import { AppShell, LoadingScreen, Modal } from '@/components/ui';
+import { Plus, Eye, PencilSimple, SquaresFour, GearSix } from '@phosphor-icons/react';
 
 export default function AdminPage() {
   const [templates, setTemplates] = useState<PromptTemplate[]>([]);
@@ -44,129 +46,115 @@ export default function AdminPage() {
   };
 
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-lg">Loading...</div>
-      </div>
-    );
+    return <LoadingScreen />;
   }
 
-  return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">Admin Panel</h1>
-            <p className="text-sm text-gray-600">Prompt Template Management</p>
-          </div>
-          <div className="flex items-center gap-4">
-            <button
-              onClick={() => router.push('/dashboard')}
-              className="text-sm text-blue-600 hover:text-blue-800"
-            >
-              Dashboard
-            </button>
-            <span className="text-sm text-gray-600">{user?.email}</span>
-            <button
-              onClick={handleLogout}
-              className="text-sm text-red-600 hover:text-red-800"
-            >
-              Logout
-            </button>
-          </div>
-        </div>
-      </header>
+  const nav = [
+    {
+      label: 'Projects',
+      icon: <SquaresFour size={18} weight="fill" />,
+      onClick: () => router.push('/dashboard'),
+    },
+    {
+      label: 'Admin',
+      icon: <GearSix size={18} weight="fill" />,
+      active: true,
+      onClick: () => router.push('/admin'),
+    },
+  ];
 
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-bold text-gray-900">Prompt Templates</h2>
+  return (
+    <AppShell
+      user={user}
+      nav={nav}
+      onLogout={handleLogout}
+      onHome={() => router.push('/dashboard')}
+    >
+      <div className="mx-auto max-w-6xl">
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <h2 className="text-2xl font-semibold tracking-tight text-slate-100">Prompt templates</h2>
+            <p className="mt-1 text-sm text-slate-400">
+              Version-controlled prompts for each workflow step
+            </p>
+          </div>
           <button
             onClick={() => {
               setSelectedTemplate(null);
               setShowModal(true);
             }}
-            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition"
+            className="btn-primary"
           >
-            + New Template
+            <Plus size={18} weight="bold" />
+            New template
           </button>
         </div>
 
-        <div className="bg-white rounded-lg shadow overflow-hidden">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
+        <div className="mt-8 overflow-hidden rounded-card border border-slate-800 bg-[rgb(var(--surface))] shadow-card">
+          <table className="min-w-full divide-y divide-slate-800">
+            <thead className="bg-slate-800/50">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Step Type
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Version
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Status
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Created
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Actions
-                </th>
+                {['Step type', 'Version', 'Status', 'Created', ''].map((h) => (
+                  <th
+                    key={h}
+                    className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-400"
+                  >
+                    {h}
+                  </th>
+                ))}
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className="divide-y divide-slate-800 bg-transparent">
               {templates.map((template) => (
-                <tr key={template.id}>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                <tr key={template.id} className="transition hover:bg-slate-800/40">
+                  <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-slate-100">
                     {STEP_LABELS[template.step_type]}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  <td className="whitespace-nowrap px-6 py-4 text-sm text-slate-400">
                     v{template.version}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
+                  <td className="whitespace-nowrap px-6 py-4">
                     <span
-                      className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                      className={`pill ${
                         template.is_active
-                          ? 'bg-green-100 text-green-800'
-                          : 'bg-gray-100 text-gray-800'
+                          ? 'bg-emerald-500/15 text-emerald-300'
+                          : 'bg-slate-800 text-slate-400'
                       }`}
                     >
                       {template.is_active ? 'Active' : 'Inactive'}
                     </span>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  <td className="whitespace-nowrap px-6 py-4 text-sm text-slate-400">
                     {new Date(template.created_at).toLocaleDateString()}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                  <td className="whitespace-nowrap px-6 py-4 text-right text-sm">
                     <button
                       onClick={() => {
                         setSelectedTemplate(template);
                         setShowModal(true);
                       }}
-                      className="text-blue-600 hover:text-blue-900 mr-4"
+                      className="btn-ghost"
                     >
-                      View
+                      {template.is_active ? (
+                        <>
+                          <PencilSimple size={16} />
+                          Edit
+                        </>
+                      ) : (
+                        <>
+                          <Eye size={16} />
+                          View
+                        </>
+                      )}
                     </button>
-                    {template.is_active && (
-                      <button
-                        onClick={() => {
-                          setSelectedTemplate(template);
-                          setShowModal(true);
-                        }}
-                        className="text-indigo-600 hover:text-indigo-900"
-                      >
-                        Update
-                      </button>
-                    )}
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
-      </main>
+      </div>
 
-      {/* Template Modal */}
       {showModal && (
         <TemplateModal
           template={selectedTemplate}
@@ -181,7 +169,7 @@ export default function AdminPage() {
           }}
         />
       )}
-    </div>
+    </AppShell>
   );
 }
 
@@ -211,13 +199,11 @@ function TemplateModal({
 
     try {
       if (template) {
-        // Update (creates new version)
         await promptTemplatesApi.update(template.id, {
           system_prompt: systemPrompt,
           user_prompt_template: userPromptTemplate,
         });
       } else {
-        // Create new
         await promptTemplatesApi.create({
           step_type: stepType,
           system_prompt: systemPrompt,
@@ -233,82 +219,68 @@ function TemplateModal({
   };
 
   const isViewOnly = Boolean(template && !template.is_active);
+  const title = isViewOnly ? 'View template' : template ? 'Update template' : 'Create template';
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-8 max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-        <h2 className="text-2xl font-bold mb-4">
-          {isViewOnly ? 'View Template' : template ? 'Update Template' : 'Create Template'}
-        </h2>
-        {error && <div className="bg-red-50 text-red-800 p-3 rounded mb-4">{error}</div>}
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Step Type *
-            </label>
-            <select
-              required
-              disabled={!!template}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
-              value={stepType}
-              onChange={(e) => setStepType(e.target.value as StepType)}
-            >
-              {Object.entries(STEP_LABELS).map(([value, label]) => (
-                <option key={value} value={value}>
-                  {label}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              System Prompt *
-            </label>
-            <textarea
-              required
-              disabled={isViewOnly}
-              rows={6}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm disabled:bg-gray-100"
-              value={systemPrompt}
-              onChange={(e) => setSystemPrompt(e.target.value)}
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              User Prompt Template *
-            </label>
-            <p className="text-xs text-gray-500 mb-2">
-              Use placeholders: {'{requirement_text}'}, {'{context}'}
-            </p>
-            <textarea
-              required
-              disabled={isViewOnly}
-              rows={10}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm disabled:bg-gray-100"
-              value={userPromptTemplate}
-              onChange={(e) => setUserPromptTemplate(e.target.value)}
-            />
-          </div>
-          <div className="flex justify-end gap-3 mt-6">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 text-gray-700 hover:text-gray-900"
-            >
-              {isViewOnly ? 'Close' : 'Cancel'}
+    <Modal onClose={onClose} title={title} size="lg">
+      {error && (
+        <div className="mb-4 rounded-lg border border-rose-500/30 bg-rose-500/10 px-3.5 py-3 text-sm text-rose-300">
+          {error}
+        </div>
+      )}
+      <form onSubmit={handleSubmit} className="space-y-5">
+        <div>
+          <label className="field-label">Step type</label>
+          <select
+            required
+            disabled={!!template}
+            className="field-input disabled:opacity-60"
+            value={stepType}
+            onChange={(e) => setStepType(e.target.value as StepType)}
+          >
+            {Object.entries(STEP_LABELS).map(([value, label]) => (
+              <option key={value} value={value}>
+                {label}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className="field-label">System prompt</label>
+          <textarea
+            required
+            disabled={isViewOnly}
+            rows={6}
+            className="field-input font-mono text-xs disabled:opacity-60"
+            value={systemPrompt}
+            onChange={(e) => setSystemPrompt(e.target.value)}
+          />
+        </div>
+        <div>
+          <label className="field-label">User prompt template</label>
+          <p className="mb-2 text-xs text-slate-400">
+            Use placeholders: {'{requirement_text}'}, {'{context}'}
+          </p>
+          <textarea
+            required
+            disabled={isViewOnly}
+            rows={10}
+            className="field-input font-mono text-xs disabled:opacity-60"
+            value={userPromptTemplate}
+            onChange={(e) => setUserPromptTemplate(e.target.value)}
+          />
+        </div>
+        <div className="flex justify-end gap-3 pt-2">
+          <button type="button" onClick={onClose} className="btn-secondary">
+            {isViewOnly ? 'Close' : 'Cancel'}
+          </button>
+          {!isViewOnly && (
+            <button type="submit" disabled={loading} className="btn-primary">
+              {loading ? 'Saving...' : template ? 'Create new version' : 'Create template'}
             </button>
-            {!isViewOnly && (
-              <button
-                type="submit"
-                disabled={loading}
-                className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-400"
-              >
-                {loading ? 'Saving...' : template ? 'Create New Version' : 'Create Template'}
-              </button>
-            )}
-          </div>
-        </form>
-      </div>
-    </div>
+          )}
+        </div>
+      </form>
+    </Modal>
   );
 }

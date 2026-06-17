@@ -141,7 +141,7 @@ export const STATUS_LABELS: Record<StepStatus, string> = {
 };
 
 export const STATUS_COLORS: Record<StepStatus, string> = {
-  [StepStatus.LOCKED]: 'bg-gray-200 text-gray-700',
-  [StepStatus.UNLOCKED]: 'bg-blue-200 text-blue-700',
-  [StepStatus.APPROVED]: 'bg-green-200 text-green-700',
+  [StepStatus.LOCKED]: 'bg-slate-800 text-slate-400',
+  [StepStatus.UNLOCKED]: 'bg-accent-500/15 text-accent-300',
+  [StepStatus.APPROVED]: 'bg-emerald-500/15 text-emerald-300',
 };

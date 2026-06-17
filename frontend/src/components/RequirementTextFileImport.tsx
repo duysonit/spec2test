@@ -64,29 +64,31 @@ export function RequirementTextFileImport({ onTextImported, disabled }: Props) {
       <div
         onDrop={onDrop}
         onDragOver={onDragOver}
-        className={`rounded-md border border-dashed px-3 py-2 text-sm transition ${
-          disabled ? 'border-gray-200 bg-gray-50 text-gray-400' : 'border-gray-300 bg-gray-50 text-gray-600 hover:border-blue-400 hover:bg-blue-50/40'
+        className={`rounded-lg border border-dashed px-3 py-2.5 text-sm transition ${
+          disabled
+            ? 'border-slate-800 bg-slate-900 text-slate-600'
+            : 'border-slate-700 bg-slate-900 text-slate-400 hover:border-accent-400 hover:bg-accent-500/10'
         }`}
       >
-        <span className="font-medium text-gray-700">Import from file</span>
-        <span className="mx-1.5 text-gray-400">·</span>
+        <span className="font-medium text-slate-200">Import from file</span>
+        <span className="mx-1.5 text-slate-600">·</span>
         <button
           type="button"
           disabled={disabled || status === 'loading'}
           onClick={() => inputRef.current?.click()}
-          className="text-blue-600 hover:text-blue-800 underline disabled:no-underline disabled:text-gray-400"
+          className="font-medium text-accent-300 underline hover:text-accent-200 disabled:text-slate-600 disabled:no-underline"
         >
-          {status === 'loading' ? 'Reading file…' : 'Choose file'}
+          {status === 'loading' ? 'Reading file...' : 'Choose file'}
         </button>
-        <span className="text-gray-500"> or drag and drop here</span>
-        <p className="mt-1 text-xs text-gray-500">
-          PDF, DOCX, TXT, or images (PNG, JPG, …). OCR runs in the browser for images. Legacy .doc is not supported — use
+        <span className="text-slate-400"> or drag and drop here</span>
+        <p className="mt-1 text-xs text-slate-500">
+          PDF, DOCX, TXT, or images (PNG, JPG). OCR runs in the browser for images. Legacy .doc is not supported, use
           .docx or PDF.
         </p>
       </div>
       {message && (
         <p
-          className={`mt-1 text-xs ${status === 'error' ? 'text-red-600' : 'text-green-700'}`}
+          className={`mt-1.5 text-xs ${status === 'error' ? 'text-rose-300' : 'text-emerald-300'}`}
           role={status === 'error' ? 'alert' : 'status'}
         >
           {message}
