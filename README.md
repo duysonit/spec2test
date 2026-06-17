@@ -1,16 +1,20 @@
-# Spec2Test - AI-Assisted QC Workflow Tool
+# Spec2Test — AI-Assisted QC Workflow Tool
 
-Spec2Test is an internal tool for QC teams that uses AI in a human-in-the-loop model to transform specifications into test strategies, test cases, and bug reports in a controlled, traceable, and process-compliant manner.
+Spec2Test is an internal tool for HSC QC teams that uses AI in a human-in-the-loop model to turn specifications into test strategies, test cases, and bug reports in a controlled, traceable, and process-compliant way. The UI follows the **HSC Design System** (dark-first, brand blue `#2681FF`, 8px grid).
 
 ## Features
 
-- **4-Step Workflow**: Requirement Analysis → Test Strategy → Test Case Design → Bug Report
-- **AI-Assisted**: AI generates drafts, humans approve
-- **Step Locking**: Enforces sequential workflow
-- **Full Traceability**: Audit trail for all actions
-- **Prompt Management**: Version-controlled prompts
+- **Two project types**
+  - **Standard QC** — 4-step workflow: Requirement Analysis → Test Strategy → Test Case Design → Bug Report
+  - **API Testing** — generate test cases per API endpoint
+- **AI-assisted, human-approved** — AI generates drafts, QC reviews and approves
+- **Step locking** — enforces sequential workflow; approved steps are immutable
+- **Visual mind map** — requirement steps rendered as an interactive bubble infographic (zoom/pan)
+- **Requirement import** — paste text or import from PDF / DOCX / TXT / images (in-browser OCR)
+- **Full traceability** — audit trail for all AI calls
+- **Prompt management** — version-controlled prompt templates (admin)
 
-## Production (đã deploy)
+## Production
 
 | Layer | Service | URL |
 |-------|---------|-----|
@@ -18,65 +22,54 @@ Spec2Test is an internal tool for QC teams that uses AI in a human-in-the-loop m
 | Backend | Render | https://spec2test-pu49.onrender.com |
 | Database | Supabase (PostgreSQL) | Session pooler `ap-northeast-1` |
 
-Chi tiết env, deploy, troubleshooting: **[PRODUCTION_SERVICES.md](./PRODUCTION_SERVICES.md)**
+Env, deploy, and troubleshooting details: **[PRODUCTION_SERVICES.md](./PRODUCTION_SERVICES.md)** · **[DEPLOYMENT.md](./DEPLOYMENT.md)**
 
 ## Tech Stack
 
 ### Backend
-- FastAPI
-- PostgreSQL
-- SQLAlchemy
-- JWT Authentication
-- OpenAI GPT-4
+- FastAPI + Uvicorn
+- PostgreSQL + SQLAlchemy
+- JWT authentication (python-jose, passlib/argon2)
+- OpenAI (`gpt-4o-mini` by default)
+- Document parsing: pypdf, python-docx
 
 ### Frontend
-- Next.js 14
-- React 18
-- Tailwind CSS
-- TypeScript
+- Next.js 14 (App Router) + React 18 + TypeScript
+- Tailwind CSS (HSC Design System tokens)
+- Motion + Magic UI components (MagicCard, NumberTicker, BlurFade, ShimmerButton)
+- Phosphor icons
+- Client-side file extraction: pdfjs-dist, tesseract.js (OCR), jszip
+
+### Design System
+The UI implements the **HSC Design System** (see `HSC-Design-System 1.md`): dark-first theme, brand blue `#2681FF`, cool neutral chrome, semantic price/status colors, 4px/8px radii, tabular numerals, no in-product gradients.
 
 ## Prerequisites
 
-- Docker & Docker Compose
 - Node.js 18+
 - Python 3.11+
+- PostgreSQL 15+ (or Docker)
 - OpenAI API Key
 
-## Quick Start
-
-### 1. Clone and Setup
+## Quick Start (Docker)
 
 ```bash
-# Clone the repository
 cd spec2test
 
 # Copy environment files
 cp backend/.env.example backend/.env
-cp frontend/.env.example frontend/.env
+cp frontend/.env.example frontend/.env.local
 
 # Add your OpenAI API key to backend/.env
 # OPENAI_API_KEY=sk-...
-```
 
-### 2. Start with Docker Compose
-
-```bash
 # Start all services (database, backend, frontend)
 docker-compose up -d
 
-# View logs
-docker-compose logs -f
-```
-
-### 3. Initialize Database
-
-```bash
-# Run migrations and seed data
+# Initialize database (tables + seed users & prompts)
 docker-compose exec backend python -m app.scripts.init_db
 ```
 
-### 4. Access the Application
-
+Then open:
 - **Frontend**: http://localhost:3000
 - **Backend API**: http://localhost:8000
 - **API Docs**: http://localhost:8000/docs
@@ -85,25 +78,28 @@ docker-compose exec backend python -m app.scripts.init_db
 - Email: `son.vd@hsc.com.vn`
 - Password: `admin123`
 
-## Development
+## Local Development (without Docker)
 
-### Backend Development
+### Backend
 
 ```bash
 cd backend
 
-# Create virtual environment
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+# Create and activate a virtual environment
+python3 -m venv .venv
+source .venv/bin/activate        # Windows: .venv\Scripts\activate
 
 # Install dependencies
 pip install -r requirements.txt
 
-# Run development server
+# Initialize the database (run once)
+python -m app.scripts.init_db
+
+# Run the dev server
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-### Frontend Development
+### Frontend
 
 ```bash
 cd frontend
@@ -111,62 +107,82 @@ cd frontend
 # Install dependencies
 npm install
 
-# Run development server
+# Run the dev server
 npm run dev
 ```
+
+> Note: do not run `npm run build` while `npm run dev` is using the same `.next` folder — stop the dev server first to avoid a corrupted build cache.
 
 ## Project Structure
 
 ```
 spec2test/
-├── backend/              # FastAPI backend
+├── backend/                      # FastAPI backend
 │   ├── app/
-│   │   ├── api/         # API routes
-│   │   ├── core/        # Core configs
-│   │   ├── models/      # SQLAlchemy models
-│   │   ├── schemas/     # Pydantic schemas
-│   │   ├── services/    # Business logic
-│   │   └── scripts/     # Utility scripts
-│   ├── tests/
+│   │   ├── api/                  # API routes (auth, projects, apis, bugs, ...)
+│   │   ├── core/                 # Config, security, prompts
+│   │   ├── models/               # SQLAlchemy models
+│   │   ├── schemas/              # Pydantic schemas
+│   │   ├── services/             # AI + workflow business logic
+│   │   └── scripts/              # init_db and utilities
 │   └── requirements.txt
-├── frontend/            # Next.js frontend
-│   ├── src/
-│   │   ├── app/        # Next.js 14 app directory
-│   │   ├── components/ # React components
-│   │   ├── lib/        # Utilities
-│   │   └── types/      # TypeScript types
-│   └── package.json
+├── frontend/                     # Next.js frontend
+│   ├── public/                   # logo-hsc.png and static assets
+│   └── src/
+│       ├── app/                  # App Router pages
+│       │   ├── page.tsx          # Login
+│       │   ├── dashboard/        # Vercel-style projects dashboard
+│       │   ├── projects/new/     # Create-project page
+│       │   ├── projects/[id]/    # Project workflow + API testing view
+│       │   └── admin/            # Prompt template management
+│       ├── components/
+│       │   ├── ui.tsx            # AppShell (sidebar), Modal, EmptyState, ...
+│       │   ├── magicui/          # Magic UI components
+│       │   └── RequirementMindMap.tsx
+│       ├── lib/                  # api client, auth, file extraction, utils
+│       └── types/
+├── HSC-Design-System 1.md        # Company design system reference
+├── SKILL.md                      # taste-skill design rules
 └── docker-compose.yml
 ```
 
-## Workflow
+## Standard QC Workflow
 
-1. **Create Project**: QC creates a new project with requirements
-2. **Step 1 - Requirement Analysis**: AI analyzes and structures requirements
-3. **Approve Step 1**: QC reviews, edits, and approves
-4. **Step 2 - Test Strategy**: AI generates test strategy based on approved requirements
-5. **Approve Step 2**: QC reviews and approves
-6. **Step 3 - Test Case Design**: AI generates detailed test cases
-7. **Approve Step 3**: QC reviews and approves
-8. **Step 4 - Bug Report**: AI generates standardized bug report template
+1. **Create project** with a requirement spec (typed or imported from a file)
+2. **Requirement Analysis** — AI structures the requirement; view it as a visual mind map
+3. **Test Strategy** — AI defines scope, types, and approach
+4. **Test Case Design** — AI generates positive / negative / edge cases
+5. **Bug Report** — log bugs; AI formats them to a standard template
 
-Each step must be approved before proceeding to the next step.
+Each step must be approved before the next unlocks. Approved content is locked (immutable).
+
+## API Testing Workflow
+
+1. Create an **API Testing** project
+2. Add API endpoints (name, URL, method, auth, specification)
+3. Generate test cases per endpoint; review, edit, and regenerate as needed
 
 ## API Documentation
 
-Once the backend is running, visit http://localhost:8000/docs for interactive API documentation.
+With the backend running, visit http://localhost:8000/docs for interactive Swagger docs (or `/redoc`).
 
 ## Environment Variables
 
-### Backend (.env)
+### Backend (`backend/.env`)
 
 ```
-DATABASE_URL=postgresql://spec2test:spec2test123@db:5432/spec2test
-SECRET_KEY=your-secret-key-change-in-production
+DATABASE_URL=postgresql://spec2test:spec2test123@localhost:5432/spec2test
+SECRET_KEY=change-me-to-a-long-random-string
+ALGORITHM=HS256
+ACCESS_TOKEN_EXPIRE_MINUTES=10080
 OPENAI_API_KEY=sk-your-openai-api-key
+OPENAI_MODEL=gpt-4o-mini
+CORS_ORIGINS=http://localhost:3000
 ```
 
-### Frontend (.env.local)
+For Docker Compose, set `DATABASE_URL` host to `db` instead of `localhost`.
+
+### Frontend (`frontend/.env.local`)
 
 ```
 NEXT_PUBLIC_API_URL=http://localhost:8000
